@@ -8,7 +8,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $AgentsHome = (Resolve-Path -LiteralPath $AgentsHome).Path
 $env:AGENTS_HOME = $AgentsHome
-$RegistryPath = Join-Path $AgentsHome 'mcp\registry.json'
+$RegistryPath = Join-Path (Join-Path $AgentsHome 'mcp') 'registry.json'
+
+function Join-AgentPath {
+  param([Parameter(Mandatory)][string[]]$Parts)
+  $result = $Parts[0]
+  for ($i = 1; $i -lt $Parts.Count; $i++) { $result = Join-Path $result $Parts[$i] }
+  return $result
+}
 
 function Expand-AgentValue {
   param([AllowNull()][string]$Value)
@@ -40,9 +47,9 @@ function Invoke-SetupCommand {
   Write-Host ("> [{0}] {1}" -f $WorkingDirectory, $Command)
   Push-Location -LiteralPath $WorkingDirectory
   try {
-    & pwsh -NoProfile -ExecutionPolicy Bypass -Command $Command
+    Invoke-Expression $Command
     $exit = $LASTEXITCODE
-    if ($exit -ne 0) { throw "Setup command exited with code ${exit}: $Command" }
+    if ($null -ne $exit -and $exit -ne 0) { throw "Setup command exited with code ${exit}: $Command" }
   } finally {
     Pop-Location
   }
@@ -60,7 +67,7 @@ foreach ($server in $servers) {
   Write-Host "`n== MCP server: $($server.name) =="
   if ($server.repo) {
     $sourceDir = Expand-AgentValue ([string]$server.sourceDir)
-    if (-not $sourceDir) { $sourceDir = Join-Path $AgentsHome ("mcp-sources\" + $server.name) }
+    if (-not $sourceDir) { $sourceDir = Join-AgentPath @($AgentsHome, 'mcp-sources', [string]$server.name) }
 
     if (-not $preparedSources.ContainsKey($sourceDir)) {
       if (-not (Test-Path -LiteralPath (Join-Path $sourceDir '.git'))) {
@@ -129,4 +136,3 @@ foreach ($server in $servers) {
 }
 
 Write-Host "`nMCP installation pass complete."
-

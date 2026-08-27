@@ -1,7 +1,7 @@
 {
-  "name": "huazzi",
+  "name": "personal",
   "interface": {
-    "displayName": "Huazzi"
+    "displayName": "Personal"
   },
   "plugins": [
     {

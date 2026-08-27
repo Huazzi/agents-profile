@@ -7,7 +7,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $AgentsHome = (Resolve-Path -LiteralPath $AgentsHome).Path
 $env:AGENTS_HOME = $AgentsHome
-$RegistryPath = Join-Path $AgentsHome 'plugins\registry.json'
+$RegistryPath = Join-Path (Join-Path $AgentsHome 'plugins') 'registry.json'
+
+function Join-AgentPath {
+  param([Parameter(Mandatory)][string[]]$Parts)
+  $result = $Parts[0]
+  for ($i = 1; $i -lt $Parts.Count; $i++) { $result = Join-Path $result $Parts[$i] }
+  return $result
+}
 
 function Expand-AgentValue {
   param([AllowNull()][string]$Value)
@@ -53,7 +60,7 @@ foreach ($plugin in $plugins) {
 
     'standalone-plugin-repo' {
       if (-not $plugin.repo) { throw "Plugin $($plugin.name) is missing repo" }
-      $sourceDir = if ($plugin.sourceDir) { Expand-AgentValue ([string]$plugin.sourceDir) } else { Join-Path $AgentsHome ("plugin-sources\" + $plugin.name) }
+      $sourceDir = if ($plugin.sourceDir) { Expand-AgentValue ([string]$plugin.sourceDir) } else { Join-AgentPath @($AgentsHome, 'plugin-sources', [string]$plugin.name) }
       if (-not (Test-Path -LiteralPath (Join-Path $sourceDir '.git'))) {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $sourceDir) | Out-Null
         Invoke-Native -FilePath 'git' -Arguments @('clone', [string]$plugin.repo, $sourceDir)

@@ -674,6 +674,91 @@
       "skillFolderHash": "ac92229646fccf7315ae139c37b479b3790617f2",
       "installedAt": "2026-08-26T03:00:40.127Z",
       "updatedAt": "2026-08-26T03:00:40.127Z"
+    },
+    "code-simplifier": {
+      "source": "anthropics/claude-plugins-official",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anthropics/claude-plugins-official.git",
+      "sourceInputUrl": "https://github.com/anthropics/claude-plugins-official/blob/main/plugins/code-simplifier/agents/code-simplifier.md",
+      "sourceRef": "main",
+      "skillPath": "plugins/code-simplifier/agents/code-simplifier.md",
+      "checkMode": "source-file",
+      "localSourcePath": "references/source/code-simplifier/agents/code-simplifier.md",
+      "skillFolderHash": "a70143e206752629bf549ca1c40822cb87b7167e",
+      "installedAt": "2026-08-27T06:57:05.910Z",
+      "updatedAt": "2026-08-27T06:57:05.910Z",
+      "localSourceHash": "68a0b74f403cc3d1fd15b0bbd21bda0b33cf4fce"
+    },
+    "context7-mcp": {
+      "source": "upstash/context7",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/upstash/context7.git",
+      "sourceInputUrl": "https://github.com/upstash/context7/blob/master/skills/context7-mcp/SKILL.md",
+      "sourceRef": "master",
+      "skillPath": "skills/context7-mcp/SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "be52bdb562627fc38c93197d00240e4a0592c0bc",
+      "installedAt": "2026-08-27T06:57:05.920Z",
+      "updatedAt": "2026-08-27T06:57:05.920Z"
+    },
+    "graylog-diagnosis": {
+      "source": "Huazzi/graylog-diagnosis",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Huazzi/graylog-diagnosis.git",
+      "sourceInputUrl": "https://github.com/Huazzi/graylog-diagnosis",
+      "skillPath": "SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "b0b266c33a0fb5907ee208cbb37ada2f594ec1b2",
+      "installedAt": "2026-08-27T06:57:05.920Z",
+      "updatedAt": "2026-08-27T06:57:05.920Z",
+      "sourceRef": "main"
+    },
+    "karpathy-guidelines": {
+      "source": "multica-ai/andrej-karpathy-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/multica-ai/andrej-karpathy-skills.git",
+      "sourceInputUrl": "https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md",
+      "sourceRef": "main",
+      "skillPath": "skills/karpathy-guidelines/SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "a6425741485aa3fc3acdf50f4160ec98892c0b1f",
+      "installedAt": "2026-08-27T06:57:05.922Z",
+      "updatedAt": "2026-08-27T06:57:05.922Z"
+    },
+    "planning-with-files": {
+      "source": "OthmanAdi/planning-with-files",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/OthmanAdi/planning-with-files.git",
+      "sourceInputUrl": "https://github.com/OthmanAdi/planning-with-files/tree/master/.agents/skills/planning-with-files",
+      "sourceRef": "master",
+      "skillPath": ".agents/skills/planning-with-files/SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "c5baf5b1e6f742f3df0805c6a71d46fef9d88831",
+      "installedAt": "2026-08-27T06:57:05.922Z",
+      "updatedAt": "2026-08-27T06:57:05.922Z"
+    },
+    "playwright": {
+      "source": "microsoft/playwright",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/microsoft/playwright.git",
+      "sourceInputUrl": "https://github.com/microsoft/playwright",
+      "checkMode": "metadata-only",
+      "skillFolderHash": "d1d2c396decfd8973ff2e882a8bd4192a67abb8b",
+      "installedAt": "2026-08-27T06:57:05.924Z",
+      "updatedAt": "2026-08-27T06:57:05.924Z",
+      "sourceRef": "main"
+    },
+    "prd-handler": {
+      "source": "Huazzi/prd-handler",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Huazzi/prd-handler.git",
+      "sourceInputUrl": "https://github.com/Huazzi/prd-handler",
+      "skillPath": "SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "c3a0a449922d17c4adef152cc9cd9e9811f0d1a5",
+      "installedAt": "2026-08-27T06:57:05.925Z",
+      "updatedAt": "2026-08-27T06:57:05.925Z",
+      "sourceRef": "main"
     }
   },
   "dismissed": {
