@@ -1,0 +1,4 @@
+interface:
+  display_name: "Graylog 排障（MCP）"
+  short_description: "用只读 MCP 和源码证据定位 Graylog 日志问题"
+  default_prompt: "Use $graylog-diagnosis to investigate application logs through the configured read-only graylog43-query-mcp tools."

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "description": "Portable plugin registry for bootstrapping Codex/agent plugins. This file records source-of-truth install metadata; installed caches live under provider-specific homes such as ~/.codex/plugins/cache.",
+  "plugins": [
+    {
+      "name": "feature-dev-codex",
+      "marketplaceName": "huazzi-plugins",
+      "type": "codex-marketplace-repo",
+      "repo": "https://github.com/Huazzi/feature-dev-codex.git",
+      "ref": "master",
+      "installSelector": "feature-dev-codex@huazzi-plugins",
+      "enabled": true,
+      "notes": "Current Codex installation was installed from the Huazzi feature-dev-codex marketplace repository."
+    }
+  ]
+}

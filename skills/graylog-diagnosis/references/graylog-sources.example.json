@@ -1,0 +1,18 @@
+{
+  "default": {
+    "baseUrl": "https://graylog.example.com",
+    "tokenEnv": "GRAYLOG_TOKEN_DEFAULT"
+  },
+  "orderService": {
+    "name": "订单服务",
+    "baseUrl": "https://orders-graylog.example.com",
+    "tokenEnv": "GRAYLOG_TOKEN_ORDER_SERVICE",
+    "aliases": ["order-service", "orders"]
+  },
+  "inventoryService": {
+    "name": "库存服务",
+    "baseUrl": "https://inventory-graylog.example.com",
+    "tokenEnv": "GRAYLOG_TOKEN_INVENTORY_SERVICE",
+    "aliases": ["inventory-service", "inventory"]
+  }
+}

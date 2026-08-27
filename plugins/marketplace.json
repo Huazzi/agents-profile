@@ -1,0 +1,32 @@
+{
+  "name": "huazzi",
+  "interface": {
+    "displayName": "Huazzi"
+  },
+  "plugins": [
+    {
+      "name": "feature-dev",
+      "source": {
+        "source": "local",
+        "path": "./plugins/feature-dev"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "feature-dev-codex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/feature-dev-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

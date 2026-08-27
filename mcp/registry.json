@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "description": "Portable MCP registry. It records source repositories, build steps, command templates, and environment file names, but never secrets.",
+  "servers": [
+    {
+      "name": "graylog_tst",
+      "type": "stdio",
+      "repo": "https://github.com/Huazzi/graylog43-query-mcp.git",
+      "ref": "main",
+      "sourceDir": "${AGENTS_HOME}/mcp-sources/graylog43-query-mcp",
+      "setup": [
+        "npm install",
+        "npm run build"
+      ],
+      "command": "node",
+      "args": [
+        "--env-file=${AGENTS_HOME}/mcp/env/graylog43-query-mcp.env",
+        "${AGENTS_HOME}/mcp-sources/graylog43-query-mcp/dist/index.js",
+        "--profile",
+        "tst"
+      ],
+      "env": {},
+      "enabled": true,
+      "notes": "Uses the tst profile from the shared graylog43-query-mcp repository."
+    },
+    {
+      "name": "graylog_prd",
+      "type": "stdio",
+      "repo": "https://github.com/Huazzi/graylog43-query-mcp.git",
+      "ref": "main",
+      "sourceDir": "${AGENTS_HOME}/mcp-sources/graylog43-query-mcp",
+      "setup": [
+        "npm install",
+        "npm run build"
+      ],
+      "command": "node",
+      "args": [
+        "--env-file=${AGENTS_HOME}/mcp/env/graylog43-query-mcp.env",
+        "${AGENTS_HOME}/mcp-sources/graylog43-query-mcp/dist/index.js",
+        "--profile",
+        "prd"
+      ],
+      "env": {},
+      "enabled": true,
+      "notes": "Uses the prd profile from the shared graylog43-query-mcp repository."
+    }
+  ]
+}

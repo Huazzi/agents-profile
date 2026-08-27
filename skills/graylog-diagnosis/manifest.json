@@ -1,0 +1,9 @@
+{
+  "name": "graylog-diagnosis",
+  "version": "2.0.0",
+  "runtime": "mcp",
+  "query_mcp": "graylog43-query-mcp",
+  "required_profiles": ["graylog_tst", "graylog_prd"],
+  "read_only": true,
+  "verification": "node scripts/verify_skill.mjs"
+}

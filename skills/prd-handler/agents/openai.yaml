@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD Handler"
+  short_description: "归档 PRD、批量澄清问题、维护需求工作稿，并生成最终版需求文档"
+  default_prompt: "使用 $prd-handler 将产品需求材料整理到指定 PRD 工作目录，评估疑点，生成澄清问题包，维护需求工作稿，并在确认后生成最终版需求文档。"
