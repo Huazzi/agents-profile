@@ -608,11 +608,11 @@ function printHumanReport(payload) {
     type: Math.max(displayWidth('来源类型'), ...rows.map((r) => displayWidth(r.type))),
     status: Math.max(displayWidth('状态'), ...rows.map((r) => displayWidth(r.status))),
   };
-  console.log(`${'Skill'.padEnd(widths.name)}  ${'来源类型'.padEnd(widths.type)}  ${'状态'.padEnd(widths.status)}  来源 / 备注`);
+  console.log(`${padDisplay('Skill', widths.name)}  ${padDisplay('来源类型', widths.type)}  ${padDisplay('状态', widths.status)}  来源 / 备注`);
   console.log(`${'-'.repeat(widths.name)}  ${'-'.repeat(widths.type)}  ${'-'.repeat(widths.status)}  ${'-'.repeat(40)}`);
   for (const row of rows) {
     const detail = row.note ? `${row.source} | ${row.note}` : row.source;
-    console.log(`${row.name.padEnd(widths.name)}  ${row.type.padEnd(widths.type)}  ${row.status.padEnd(widths.status)}  ${detail}`);
+    console.log(`${padDisplay(row.name, widths.name)}  ${padDisplay(row.type, widths.type)}  ${padDisplay(row.status, widths.status)}  ${detail}`);
   }
   console.log('');
   console.log('说明:');
@@ -628,4 +628,6 @@ main().then((code) => process.exit(code)).catch((error) => {
   console.error(`错误: ${error.stack || error.message || error}`);
   process.exit(1);
 });
+
+
 

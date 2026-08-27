@@ -21,11 +21,14 @@ https://github.com/Huazzi/agents-profile
   scripts/install-plugins.ps1
   scripts/install-mcp.ps1
   scripts/check-skills.ps1        # 只读 skill 上游/本地差异检查。
+  scripts/update-skills.ps1       # 显式更新 skill 内容，并刷新 lock hash。
   scripts/bootstrap.sh            # macOS/Linux bash bootstrap。
   scripts/install-plugins.sh
   scripts/install-mcp.sh
   scripts/check-skills.sh         # macOS/Linux skill 检查入口。
+  scripts/update-skills.sh        # macOS/Linux skill 更新入口。
   scripts/check-skills.js         # check-skills 共享实现。
+  scripts/update-skills.js        # update-skills 共享实现。
 ```
 
 ## 设计原则
@@ -227,6 +230,60 @@ bash ~/.agents/scripts/check-skills.sh --json
 - `untracked-local`：表示 `skills/` 下存在目录，但 `.skill-lock.json` 没有登记。
 - `up-to-date`：表示本地内容按当前 `checkMode` 已与 upstream 对齐；报告中不会再细分 `source-file-up-to-date` 或 `up-to-date-skill-md`。
 
+## 显式更新 skill
+
+第二阶段的更新逻辑使用独立脚本：`update-skills`。它和 `check-skills` 分开，避免“检查”动作意外改写本地 `skills/`。
+
+建议工作流：先 `check-skills` 看差异，再用 `update-skills` 明确更新，最后用 `git diff` 审查变更。
+
+Windows：
+
+```powershell
+# 预览全部可更新 skills，不写文件
+pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\update-skills.ps1 -DryRun
+
+# 更新全部可更新 skills
+pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\update-skills.ps1 -All
+
+# 只更新指定 skill；-Skill 支持数组，也支持逗号分隔
+pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\update-skills.ps1 -Skill code-review
+pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\update-skills.ps1 -Skill code-review,karpathy-guidelines
+
+# 只更新 GitHub 来源 skills
+pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\update-skills.ps1 -SourceType github -All
+```
+
+macOS/Linux：
+
+```bash
+# 预览全部可更新 skills，不写文件
+bash ~/.agents/scripts/update-skills.sh --dry-run
+
+# 更新全部可更新 skills
+bash ~/.agents/scripts/update-skills.sh --all
+
+# 只更新指定 skill；--skill 可重复，也支持逗号分隔
+bash ~/.agents/scripts/update-skills.sh --skill code-review
+bash ~/.agents/scripts/update-skills.sh --skill code-review,karpathy-guidelines
+
+# 只更新 GitHub 来源 skills
+bash ~/.agents/scripts/update-skills.sh --source-type github --all
+```
+
+更新规则：
+
+- GitHub `skill-folder`：用 upstream skill 目录替换本地 `skills/<name>/`，然后刷新 `.skill-lock.json` 中的 `skillFolderHash` 和 `updatedAt`。
+- GitHub `source-file`：只更新 lock 中登记的 `localSourcePath`，并刷新 `localSourceHash` / `skillFolderHash`。不会自动改写本地 `SKILL.md`，因为这类 skill 通常需要人工适配。
+- GitHub `metadata-only`：跳过。它只登记 repository 信息，没有可安全同步的内容路径。
+- `well-known`：只更新本地 `SKILL.md`，暂不处理 `references/` 或其他 assets。
+
+更新后请审查并提交：
+
+```bash
+git status --short
+git diff -- skills .skill-lock.json
+```
+
 ### 补充登记本地 skill 来源
 
 如果某个本地 skill 显示为 `untracked-local`，可以补充 provenance。
@@ -334,3 +391,4 @@ git status --short
 git diff --cached --stat
 git diff --cached
 ```
+
