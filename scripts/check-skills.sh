@@ -24,12 +24,12 @@ while [[ $# -gt 0 ]]; do
     -h|--help)
       node "$SCRIPT_DIR/check-skills.js" --help
       exit 0 ;;
-    *) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) echo "未知选项: $1" >&2; exit 2 ;;
   esac
 done
 
 if ! command -v node >/dev/null 2>&1; then
-  echo 'Node.js is required for check-skills.sh. Install Node.js 20+ and make sure node is on PATH.' >&2
+  echo 'check-skills.sh 需要 Node.js。请安装 Node.js 20+，并确认 node 已在 PATH 中。' >&2
   exit 1
 fi
 

@@ -16,12 +16,12 @@ $ErrorActionPreference = 'Stop'
 
 $Script = Join-Path $PSScriptRoot 'check-skills.js'
 if (-not (Test-Path -LiteralPath $Script)) {
-  throw "Missing checker implementation: $Script"
+  throw "缺少 checker 实现文件: $Script"
 }
 
 $Node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $Node) {
-  throw 'Node.js is required for check-skills.ps1. Install Node.js 20+ and make sure node is on PATH.'
+  throw 'check-skills.ps1 需要 Node.js。请安装 Node.js 20+，并确认 node 已在 PATH 中。'
 }
 
 $ArgsList = @($Script, '--agents-home', $AgentsHome, '--source-type', $SourceType)

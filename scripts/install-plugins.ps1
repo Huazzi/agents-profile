@@ -33,13 +33,13 @@ function Invoke-Native {
   & $FilePath @Arguments
   $exit = $LASTEXITCODE
   if ($exit -ne 0) {
-    $message = "$FilePath exited with code $exit"
+    $message = "$FilePath 退出码为 $exit"
     if ($IgnoreFailure) { Write-Warning $message } else { throw $message }
   }
 }
 
 if (-not (Test-Path -LiteralPath $RegistryPath)) {
-  throw "Plugin registry not found: $RegistryPath"
+  throw "未找到 plugin registry: $RegistryPath"
 }
 
 $registry = Get-Content -LiteralPath $RegistryPath -Raw | ConvertFrom-Json
@@ -51,15 +51,15 @@ foreach ($plugin in $plugins) {
 
   switch ($type) {
     'codex-marketplace-repo' {
-      if (-not $plugin.repo) { throw "Plugin $($plugin.name) is missing repo" }
+      if (-not $plugin.repo) { throw "Plugin $($plugin.name) 缺少 repo" }
       $args = @('plugin', 'marketplace', 'add', [string]$plugin.repo)
       if ($plugin.ref) { $args += @('--ref', [string]$plugin.ref) }
-      # This may fail when the marketplace already exists; continue so install can still verify/use it.
+      # marketplace 已存在时这里可能失败；继续执行，以便后续 install 仍可验证/使用它。
       Invoke-Native -FilePath 'codex' -Arguments $args -IgnoreFailure
     }
 
     'standalone-plugin-repo' {
-      if (-not $plugin.repo) { throw "Plugin $($plugin.name) is missing repo" }
+      if (-not $plugin.repo) { throw "Plugin $($plugin.name) 缺少 repo" }
       $sourceDir = if ($plugin.sourceDir) { Expand-AgentValue ([string]$plugin.sourceDir) } else { Join-AgentPath @($AgentsHome, 'plugin-sources', [string]$plugin.name) }
       if (-not (Test-Path -LiteralPath (Join-Path $sourceDir '.git'))) {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $sourceDir) | Out-Null
@@ -71,11 +71,11 @@ foreach ($plugin in $plugins) {
         Invoke-Native -FilePath 'git' -Arguments @('-C', $sourceDir, 'checkout', [string]$plugin.ref)
         Invoke-Native -FilePath 'git' -Arguments @('-C', $sourceDir, 'pull', '--ff-only') -IgnoreFailure
       }
-      Write-Warning "Standalone plugin '$($plugin.name)' is downloaded to $sourceDir. Add it to ~/.agents/plugins/marketplace.json or generate a personal marketplace before installing."
+      Write-Warning "Standalone plugin '$($plugin.name)' 已下载到 $sourceDir。安装前请把它加入 ~/.agents/plugins/marketplace.json，或生成个人 marketplace。"
     }
 
     default {
-      throw "Unsupported plugin type '$type' for $($plugin.name)"
+      throw "Plugin $($plugin.name) 使用了不支持的 type: '$type'"
     }
   }
 
@@ -83,8 +83,9 @@ foreach ($plugin in $plugins) {
     $selector = if ($plugin.installSelector) { [string]$plugin.installSelector } elseif ($plugin.marketplaceName) { "$($plugin.name)@$($plugin.marketplaceName)" } else { [string]$plugin.name }
     Invoke-Native -FilePath 'codex' -Arguments @('plugin', 'add', $selector)
   } else {
-    Write-Host 'Skipping plugin install because -NoInstall was provided.'
+    Write-Host '已指定 -NoInstall，跳过 plugin install。'
   }
 }
 
-Write-Host "`nPlugin installation pass complete."
+Write-Host "`nPlugin 安装流程完成。"
+

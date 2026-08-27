@@ -22,4 +22,4 @@ if (-not $SkipMcp) {
   & (Join-Path $PSScriptRoot 'install-mcp.ps1') -AgentsHome $AgentsHome -SkipSetup:$SkipMcpSetup -NoRegister:$NoRegisterMcp
 }
 
-Write-Host 'Bootstrap complete.'
+Write-Host 'Bootstrap 完成。'

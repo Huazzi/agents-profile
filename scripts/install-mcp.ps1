@@ -34,7 +34,7 @@ function Invoke-Native {
   & $FilePath @Arguments
   $exit = $LASTEXITCODE
   if ($exit -ne 0) {
-    $message = "$FilePath exited with code $exit"
+    $message = "$FilePath 退出码为 $exit"
     if ($IgnoreFailure) { Write-Warning $message } else { throw $message }
   }
 }
@@ -49,14 +49,14 @@ function Invoke-SetupCommand {
   try {
     Invoke-Expression $Command
     $exit = $LASTEXITCODE
-    if ($null -ne $exit -and $exit -ne 0) { throw "Setup command exited with code ${exit}: $Command" }
+    if ($null -ne $exit -and $exit -ne 0) { throw "Setup command 退出码为 ${exit}: $Command" }
   } finally {
     Pop-Location
   }
 }
 
 if (-not (Test-Path -LiteralPath $RegistryPath)) {
-  throw "MCP registry not found: $RegistryPath"
+  throw "未找到 MCP registry: $RegistryPath"
 }
 
 $registry = Get-Content -LiteralPath $RegistryPath -Raw | ConvertFrom-Json
@@ -87,7 +87,7 @@ foreach ($server in $servers) {
           if ($cmd) { Invoke-SetupCommand -Command ([string]$cmd) -WorkingDirectory $sourceDir }
         }
       } else {
-        Write-Host 'Skipping setup because -SkipSetup was provided.'
+        Write-Host '已指定 -SkipSetup，跳过 setup commands。'
       }
 
       $preparedSources[$sourceDir] = $true
@@ -95,7 +95,7 @@ foreach ($server in $servers) {
   }
 
   if ($NoRegister) {
-    Write-Host 'Skipping codex mcp registration because -NoRegister was provided.'
+    Write-Host '已指定 -NoRegister，跳过 codex mcp registration。'
     continue
   }
 
@@ -103,15 +103,15 @@ foreach ($server in $servers) {
   Invoke-Native -FilePath 'codex' -Arguments @('mcp', 'remove', [string]$server.name) -IgnoreFailure
 
   if ($type -eq 'http') {
-    if (-not $server.url) { throw "HTTP MCP server $($server.name) is missing url" }
+    if (-not $server.url) { throw "HTTP MCP server $($server.name) 缺少 url" }
     $args = @('mcp', 'add', [string]$server.name, '--url', (Expand-AgentValue ([string]$server.url)))
     if ($server.bearerTokenEnvVar) { $args += @('--bearer-token-env-var', [string]$server.bearerTokenEnvVar) }
     Invoke-Native -FilePath 'codex' -Arguments $args
     continue
   }
 
-  if ($type -ne 'stdio') { throw "Unsupported MCP server type '$type' for $($server.name)" }
-  if (-not $server.command) { throw "stdio MCP server $($server.name) is missing command" }
+  if ($type -ne 'stdio') { throw "MCP server $($server.name) 使用了不支持的 type: '$type'" }
+  if (-not $server.command) { throw "stdio MCP server $($server.name) 缺少 command" }
 
   $addArgs = @('mcp', 'add', [string]$server.name)
   if ($server.env) {
@@ -126,7 +126,7 @@ foreach ($server in $servers) {
     if ($expanded -like '--env-file=*') {
       $envFile = $expanded.Substring('--env-file='.Length)
       if (-not (Test-Path -LiteralPath $envFile)) {
-        Write-Warning "Environment file does not exist yet: $envFile"
+        Write-Warning "env 文件尚不存在: $envFile"
       }
     }
     $addArgs += $expanded
@@ -135,4 +135,5 @@ foreach ($server in $servers) {
   Invoke-Native -FilePath 'codex' -Arguments $addArgs
 }
 
-Write-Host "`nMCP installation pass complete."
+Write-Host "`nMCP 安装流程完成。"
+

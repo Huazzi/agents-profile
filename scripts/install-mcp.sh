@@ -12,9 +12,9 @@ while [[ $# -gt 0 ]]; do
     --skip-setup) SKIP_SETUP=1; shift ;;
     --no-register) NO_REGISTER=1; shift ;;
     -h|--help)
-      echo 'Usage: install-mcp.sh [--agents-home DIR] [--skip-setup] [--no-register]'
+      echo '用法: install-mcp.sh [--agents-home DIR] [--skip-setup] [--no-register]'
       exit 0 ;;
-    *) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) echo "未知选项: $1" >&2; exit 2 ;;
   esac
 done
 
@@ -44,8 +44,8 @@ function run(file, args, options = {}) {
   console.log(`> ${file} ${args.join(' ')}`);
   const result = cp.spawnSync(file, args, { stdio: 'inherit', shell: false, cwd: options.cwd || process.cwd() });
   if (result.status !== 0) {
-    const message = `${file} exited with code ${result.status}`;
-    if (options.ignoreFailure) console.warn(`WARNING: ${message}`);
+    const message = `${file} 退出码为 ${result.status}`;
+    if (options.ignoreFailure) console.warn(`警告: ${message}`);
     else throw new Error(message);
   }
 }
@@ -53,10 +53,10 @@ function run(file, args, options = {}) {
 function runShell(command, cwd) {
   console.log(`> [${cwd}] ${command}`);
   const result = cp.spawnSync(command, { stdio: 'inherit', shell: true, cwd });
-  if (result.status !== 0) throw new Error(`Setup command exited with code ${result.status}: ${command}`);
+  if (result.status !== 0) throw new Error(`Setup command 退出码为 ${result.status}: ${command}`);
 }
 
-if (!fs.existsSync(registryPath)) throw new Error(`MCP registry not found: ${registryPath}`);
+if (!fs.existsSync(registryPath)) throw new Error(`未找到 MCP registry: ${registryPath}`);
 const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 const servers = (registry.servers || []).filter((server) => server && server.enabled !== false);
 const preparedSources = new Set();
@@ -84,7 +84,7 @@ for (const server of servers) {
           if (command) runShell(String(command), sourceDir);
         }
       } else {
-        console.log('Skipping setup because --skip-setup was provided.');
+        console.log('已指定 --skip-setup，跳过 setup commands。');
       }
 
       preparedSources.add(sourceDir);
@@ -92,7 +92,7 @@ for (const server of servers) {
   }
 
   if (noRegister) {
-    console.log('Skipping codex mcp registration because --no-register was provided.');
+    console.log('已指定 --no-register，跳过 codex mcp registration。');
     continue;
   }
 
@@ -100,15 +100,15 @@ for (const server of servers) {
   run('codex', ['mcp', 'remove', String(server.name)], { ignoreFailure: true });
 
   if (type === 'http') {
-    if (!server.url) throw new Error(`HTTP MCP server ${server.name} is missing url`);
+    if (!server.url) throw new Error(`HTTP MCP server ${server.name} 缺少 url`);
     const args = ['mcp', 'add', String(server.name), '--url', expand(server.url)];
     if (server.bearerTokenEnvVar) args.push('--bearer-token-env-var', String(server.bearerTokenEnvVar));
     run('codex', args);
     continue;
   }
 
-  if (type !== 'stdio') throw new Error(`Unsupported MCP server type '${type}' for ${server.name}`);
-  if (!server.command) throw new Error(`stdio MCP server ${server.name} is missing command`);
+  if (type !== 'stdio') throw new Error(`MCP server ${server.name} 使用了不支持的 type: '${type}'`);
+  if (!server.command) throw new Error(`stdio MCP server ${server.name} 缺少 command`);
 
   const addArgs = ['mcp', 'add', String(server.name)];
   if (server.env) {
@@ -121,12 +121,12 @@ for (const server of servers) {
     const arg = expand(rawArg);
     if (arg.startsWith('--env-file=')) {
       const envFile = arg.slice('--env-file='.length);
-      if (!fs.existsSync(envFile)) console.warn(`WARNING: Environment file does not exist yet: ${envFile}`);
+      if (!fs.existsSync(envFile)) console.warn(`警告: env 文件尚不存在: ${envFile}`);
     }
     addArgs.push(arg);
   }
   run('codex', addArgs);
 }
 
-console.log('\nMCP installation pass complete.');
+console.log('\nMCP 安装流程完成。');
 NODE

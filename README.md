@@ -1,41 +1,43 @@
 # Agents Profile
 
-This repository is the portable source of truth for agent-facing assets that should survive provider and device switches.
+这个仓库是 agent-facing 资产的可移植 source of truth，用来保证在切换 provider、切换设备或重装环境后，skills、plugins 和 MCP 的关键配置仍然可恢复、可审计、可同步。
 
-Remote repository intended for this profile:
+远程仓库：
 
 ```text
 https://github.com/Huazzi/agents-profile
 ```
 
-## Layout
+## 目录结构
 
 ```text
 .agents/
-  skills/                         # Full skill contents are versioned here.
-  plugins/registry.json           # Portable plugin source/install metadata.
-  mcp/registry.json               # Portable MCP source/build/launch metadata.
-  mcp/env.example/                # Example env files only; no secrets.
-  scripts/bootstrap.ps1           # Cross-platform PowerShell bootstrap.
+  skills/                         # 完整 skill 内容，直接纳入 Git 管理。
+  .skill-lock.json                # skill 来源、路径、hash、checkMode 等 provenance/lock 信息。
+  plugins/registry.json           # plugin 的可移植安装元数据。
+  mcp/registry.json               # MCP server 的源码、构建、启动和注册元数据。
+  mcp/env.example/                # 只放 env 示例文件；不要放真实 secrets。
+  scripts/bootstrap.ps1           # Windows / PowerShell bootstrap。
   scripts/install-plugins.ps1
   scripts/install-mcp.ps1
-  scripts/check-skills.ps1        # Read-only skill upstream/local drift report.
-  scripts/bootstrap.sh            # macOS/Linux bash bootstrap.
+  scripts/check-skills.ps1        # 只读 skill 上游/本地差异检查。
+  scripts/bootstrap.sh            # macOS/Linux bash bootstrap。
   scripts/install-plugins.sh
   scripts/install-mcp.sh
-  scripts/check-skills.sh         # macOS/Linux wrapper for skill checks.
-  scripts/check-skills.js         # Shared checker implementation.
+  scripts/check-skills.sh         # macOS/Linux skill 检查入口。
+  scripts/check-skills.js         # check-skills 共享实现。
 ```
 
-## Design
+## 设计原则
 
-- `skills/` is tracked as full content.
-- Plugins are tracked as metadata only: name, marketplace, Git repository, ref, and install selector.
-- MCP servers are tracked as metadata only: name, Git repository, ref, setup commands, launch command template, and environment file names.
-- Runtime caches and generated provider state are not tracked. For Codex, those belong under `~/.codex/`.
-- Secrets are not tracked. Put real MCP credentials under `mcp/env/` locally; that directory is ignored by Git.
+- `skills/` 保存完整内容，并直接提交到 Git。这样切换 provider 或设备时不依赖外部实时状态。
+- `.skill-lock.json` 记录 skill 的来源、`sourceUrl`、`skillPath`、`checkMode` 和 hash，用于后续检查上游变化。
+- Plugins 只登记元数据：名称、marketplace、Git repository、ref 和安装 selector。
+- MCP servers 只登记元数据：名称、Git repository、ref、setup commands、launch command template 和 env 文件名。
+- 运行时缓存和 provider 生成状态不纳入版本管理。例如 Codex 的运行状态应位于 `~/.codex/`。
+- Secrets 不纳入版本管理。真实 MCP 凭据放在本地 `mcp/env/`，该目录已被 `.gitignore` 忽略。
 
-## Current registered assets
+## 当前已登记资产
 
 ### Plugins
 
@@ -48,30 +50,30 @@ https://github.com/Huazzi/agents-profile
 - `graylog_tst`
 - `graylog_prd`
 
-Both use:
+二者都使用：
 
 ```text
 https://github.com/Huazzi/graylog43-query-mcp.git
 ```
 
-with ref `main` and profiles `tst` / `prd`.
+ref 为 `main`，profiles 分别为 `tst` / `prd`。
 
-## Bootstrap on Windows
+## Windows bootstrap
 
-1. Install prerequisites:
+1. 安装前置依赖：
    - Git
    - Node.js 20+
    - npm
    - Codex CLI
-   - PowerShell 7+ recommended, though Windows PowerShell may also work for basic usage
+   - 推荐 PowerShell 7+；Windows PowerShell 在基础场景下通常也可用
 
-2. Clone this profile to the user home directory:
+2. 将本 profile clone 到用户 home 目录：
 
 ```powershell
 git clone https://github.com/Huazzi/agents-profile.git $HOME\.agents
 ```
 
-If the directory already exists, initialize it and connect the remote instead:
+如果目录已经存在，可以在现有目录中初始化并连接 remote：
 
 ```powershell
 cd $HOME\.agents
@@ -80,7 +82,7 @@ git remote add origin https://github.com/Huazzi/agents-profile.git
 git pull origin main
 ```
 
-3. Create the local MCP env file:
+3. 创建本地 MCP env 文件：
 
 ```powershell
 New-Item -ItemType Directory -Force -Path $HOME\.agents\mcp\env
@@ -88,53 +90,53 @@ Copy-Item $HOME\.agents\mcp\env.example\graylog43-query-mcp.env.example $HOME\.a
 notepad $HOME\.agents\mcp\env\graylog43-query-mcp.env
 ```
 
-Do not commit files under `mcp/env/`.
+不要提交 `mcp/env/` 下的文件。
 
-4. Run bootstrap:
+4. 运行 bootstrap：
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\bootstrap.ps1
 ```
 
-Useful variants:
+常用变体：
 
 ```powershell
-# Only install/register plugins
+# 只安装/注册 plugins
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\bootstrap.ps1 -SkipMcp
 
-# Only clone/build/register MCP servers
+# 只 clone/build/register MCP servers
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\bootstrap.ps1 -SkipPlugins
 
-# Download/register MCP without running npm install/build
+# 下载/注册 MCP，但跳过 npm install/build
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\bootstrap.ps1 -SkipMcpSetup
 
-# Prepare metadata/sources without provider registration
+# 只准备 metadata/sources，不向 provider 注册
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\bootstrap.ps1 -NoInstallPlugins -NoRegisterMcp
 ```
 
-## Bootstrap on macOS
+## macOS bootstrap
 
-1. Install prerequisites:
+1. 安装前置依赖：
 
 ```bash
-# If you use Homebrew:
+# 如果使用 Homebrew:
 brew install git node
 npm install -g @openai/codex
 ```
 
-If `codex` is installed another way, make sure it is available on `PATH`:
+如果你通过其他方式安装 `codex`，请确认它在 `PATH` 上：
 
 ```bash
 codex --version
 ```
 
-2. Clone this profile to your macOS home directory:
+2. 将本 profile clone 到 macOS home 目录：
 
 ```bash
 git clone https://github.com/Huazzi/agents-profile.git ~/.agents
 ```
 
-If `~/.agents` already exists:
+如果 `~/.agents` 已存在：
 
 ```bash
 cd ~/.agents
@@ -143,7 +145,7 @@ git remote add origin https://github.com/Huazzi/agents-profile.git 2>/dev/null |
 git pull origin main
 ```
 
-3. Create the local MCP env file:
+3. 创建本地 MCP env 文件：
 
 ```bash
 mkdir -p ~/.agents/mcp/env
@@ -151,111 +153,121 @@ cp ~/.agents/mcp/env.example/graylog43-query-mcp.env.example ~/.agents/mcp/env/g
 ${EDITOR:-vi} ~/.agents/mcp/env/graylog43-query-mcp.env
 ```
 
-Do not commit files under `mcp/env/`.
+不要提交 `mcp/env/` 下的文件。
 
-4. Run bootstrap with the bash scripts:
+4. 使用 bash 脚本运行 bootstrap：
 
 ```bash
 bash ~/.agents/scripts/bootstrap.sh
 ```
 
-Useful variants:
+常用变体：
 
 ```bash
-# Only install/register plugins
+# 只安装/注册 plugins
 bash ~/.agents/scripts/bootstrap.sh --skip-mcp
 
-# Only clone/build/register MCP servers
+# 只 clone/build/register MCP servers
 bash ~/.agents/scripts/bootstrap.sh --skip-plugins
 
-# Download/register MCP without running npm install/build
+# 下载/注册 MCP，但跳过 npm install/build
 bash ~/.agents/scripts/bootstrap.sh --skip-mcp-setup
 
-# Prepare metadata/sources without provider registration
+# 只准备 metadata/sources，不向 provider 注册
 bash ~/.agents/scripts/bootstrap.sh --no-install-plugins --no-register-mcp
 ```
 
-Optional: if your Git checkout preserves executable bits or you set them locally, you can run:
+可选：如果 Git checkout 保留 executable bit，或你愿意在本地设置：
 
 ```bash
 chmod +x ~/.agents/scripts/*.sh
 ~/.agents/scripts/bootstrap.sh
 ```
 
+## 检查 skill 更新
 
-## Checking skill updates
+`skills/` 作为完整内容纳入版本管理；`.skill-lock.json` 记录许多外部来源 skill 的 provenance。刷新外部 skill 之前，建议先运行检查脚本。
 
-`skills/` is versioned as full content, while `.skill-lock.json` records provenance for many externally sourced skills. Use the checker before deciding whether to refresh any external skill.
-
-Windows:
+Windows：
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\check-skills.ps1
 
-# Check only GitHub-sourced skills
+# 只检查 GitHub 来源 skills
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\check-skills.ps1 -SourceType github
 
-# Check one skill without network access, using existing caches only
+# 只检查一个 skill，不访问网络，只使用已有缓存
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\check-skills.ps1 -Skill code-review -NoFetch
 
-# Machine-readable output
+# 输出机器可读 JSON
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\check-skills.ps1 -Json
 ```
 
-macOS/Linux:
+macOS/Linux：
 
 ```bash
 bash ~/.agents/scripts/check-skills.sh
 
-# Check only GitHub-sourced skills
+# 只检查 GitHub 来源 skills
 bash ~/.agents/scripts/check-skills.sh --source-type github
 
-# Check one skill without network access, using existing caches only
+# 只检查一个 skill，不访问网络，只使用已有缓存
 bash ~/.agents/scripts/check-skills.sh --skill code-review --no-fetch
 
-# Machine-readable output
+# 输出机器可读 JSON
 bash ~/.agents/scripts/check-skills.sh --json
 ```
 
-The first version is intentionally read-only for `skills/`:
+`check-skills` 默认不会更新或覆盖 `skills/`，只报告差异：
 
-- GitHub skills are compared by hashing the local skill folder and the upstream skill folder from a cached clone under `.cache/skill-sources/`.
-- `well-known` skills are checked against the remote `SKILL.md` only; local `references/` and other assets are not verified in this first version.
-- `untracked-local` means a directory exists under `skills/` but is not recorded in `.skill-lock.json`.
-- `up-to-date` means local content currently matches the upstream content according to the configured check mode (`skill-folder`, `source-file`, or `well-known` `SKILL.md` check). The report intentionally does not split these into separate up-to-date status names.
+- GitHub `skill-folder` 模式：比较本地 skill 目录 hash 和 `.cache/skill-sources/` 中缓存的 upstream skill 目录 hash。
+- GitHub `source-file` 模式：比较一个 upstream 源文件和 `.skill-lock.json` 中记录的本地源文件。
+- GitHub `metadata-only` 模式：只记录来源并检查远程 HEAD，不 clone 内容，也不做内容比较。
+- `well-known` 来源：只检查远程 `SKILL.md`；本地 `references/` 和其他 assets 暂不验证。
+- `untracked-local`：表示 `skills/` 下存在目录，但 `.skill-lock.json` 没有登记。
+- `up-to-date`：表示本地内容按当前 `checkMode` 已与 upstream 对齐；报告中不会再细分 `source-file-up-to-date` 或 `up-to-date-skill-md`。
 
+### 补充登记本地 skill 来源
 
-To register provenance for a local skill that appears as `untracked-local`:
+如果某个本地 skill 显示为 `untracked-local`，可以补充 provenance。
 
-Windows:
+Windows：
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\check-skills.ps1 -Register "my-skill=https://github.com/owner/repo/blob/main/skills/my-skill/SKILL.md"
 
-# Interactive prompt for every local skill missing from .skill-lock.json
+# 对所有 .skill-lock.json 中缺失的本地 skills 逐个提示输入来源 URL
 pwsh -ExecutionPolicy Bypass -File $HOME\.agents\scripts\check-skills.ps1 -RegisterMissing
 ```
 
-macOS/Linux:
+macOS/Linux：
 
 ```bash
 bash ~/.agents/scripts/check-skills.sh --register "my-skill=https://github.com/owner/repo/blob/main/skills/my-skill/SKILL.md"
 
-# Interactive prompt for every local skill missing from .skill-lock.json
+# 对所有 .skill-lock.json 中缺失的本地 skills 逐个提示输入来源 URL
 bash ~/.agents/scripts/check-skills.sh --register-missing
 ```
 
-Registration edits only `.skill-lock.json`; it does not download, update, or overwrite files under `skills/`. GitHub `blob/.../SKILL.md` and `tree/.../<skill-dir>` URLs are registered as `skill-folder` checks. GitHub `blob/.../<other-file>.md` URLs are registered as `source-file` checks. Plain repository URLs are registered as `metadata-only` unless you later add a `skillPath` manually.
-Recommended workflow:
+登记模式只会编辑 `.skill-lock.json`，不会下载、更新或覆盖 `skills/` 下的文件。
+
+URL 到 `checkMode` 的自动判断规则：
+
+- GitHub `blob/.../SKILL.md` 和 `tree/.../<skill-dir>`：登记为 `skill-folder`。
+- GitHub `blob/.../<other-file>.md`：登记为 `source-file`。
+- 纯 repository URL：登记为 `metadata-only`；如需内容比较，可后续手动补充 `skillPath`。
+
+推荐工作流：
 
 ```bash
 bash ~/.agents/scripts/check-skills.sh
-# inspect the report
-# if you manually update any skill, review with git diff before committing
+# 查看报告
+# 如需手动更新某个 skill，更新后先用 git diff 审查，再提交
 ```
-## Cross-platform path conventions
 
-Registries should use placeholders instead of hard-coded machine paths:
+## 跨平台路径约定
+
+Registries 中应使用 placeholders，避免硬编码机器路径：
 
 ```text
 ${AGENTS_HOME}
@@ -263,47 +275,47 @@ ${HOME}
 ${USERPROFILE}
 ```
 
-Prefer forward slashes in registry paths, for example:
+Registry path 推荐使用 forward slashes，例如：
 
 ```json
 "${AGENTS_HOME}/mcp-sources/graylog43-query-mcp/dist/index.js"
 ```
 
-The install scripts expand these placeholders on both Windows and macOS.
+安装脚本会在 Windows 和 macOS 上展开这些 placeholders。
 
-## How the scripts work
+## 脚本工作方式
 
 ### Plugins
 
-`plugins/registry.json` currently records `feature-dev-codex` as a `codex-marketplace-repo`. The install script runs commands equivalent to:
+`plugins/registry.json` 当前将 `feature-dev-codex` 记录为 `codex-marketplace-repo`。安装脚本会运行等价于以下命令的操作：
 
 ```powershell
 codex plugin marketplace add https://github.com/Huazzi/feature-dev-codex.git --ref master
 codex plugin add feature-dev-codex@huazzi-plugins
 ```
 
-`codex plugin add` writes installed plugin state into the active Codex home/config and cache. It does not write back into this registry.
+`codex plugin add` 会把已安装 plugin 状态写入当前 Codex home/config 和 cache，不会反向写入本仓库的 registry。
 
 ### MCP
 
-`mcp/registry.json` records `graylog_tst` and `graylog_prd`. The install script clones or updates the MCP repo under:
+`mcp/registry.json` 记录 `graylog_tst` 和 `graylog_prd`。安装脚本会把 MCP repo clone 或更新到：
 
 ```text
 ~/.agents/mcp-sources/graylog43-query-mcp
 ```
 
-Then it runs:
+然后运行：
 
 ```bash
 npm install
 npm run build
 ```
 
-Finally it recreates Codex MCP registrations using `codex mcp remove` followed by `codex mcp add`.
+最后用 `codex mcp remove` + `codex mcp add` 重新创建 Codex MCP registrations。
 
-## Git hygiene
+## Git hygiene / 提交前检查
 
-Recommended first commit:
+推荐的首次提交流程：
 
 ```bash
 cd ~/.agents
@@ -315,7 +327,7 @@ git branch -M main
 git push -u origin main
 ```
 
-Before committing, inspect staged files carefully and ensure no secrets are included:
+提交前，请仔细检查 staged files，确认没有 secrets：
 
 ```bash
 git status --short

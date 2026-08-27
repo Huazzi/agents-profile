@@ -10,9 +10,9 @@ while [[ $# -gt 0 ]]; do
     --agents-home) AGENTS_HOME="$(cd "$2" && pwd)"; shift 2 ;;
     --no-install) NO_INSTALL=1; shift ;;
     -h|--help)
-      echo 'Usage: install-plugins.sh [--agents-home DIR] [--no-install]'
+      echo '用法: install-plugins.sh [--agents-home DIR] [--no-install]'
       exit 0 ;;
-    *) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) echo "未知选项: $1" >&2; exit 2 ;;
   esac
 done
 
@@ -41,13 +41,13 @@ function run(file, args, options = {}) {
   console.log(`> ${file} ${args.join(' ')}`);
   const result = cp.spawnSync(file, args, { stdio: 'inherit', shell: false, cwd: options.cwd || process.cwd() });
   if (result.status !== 0) {
-    const message = `${file} exited with code ${result.status}`;
-    if (options.ignoreFailure) console.warn(`WARNING: ${message}`);
+    const message = `${file} 退出码为 ${result.status}`;
+    if (options.ignoreFailure) console.warn(`警告: ${message}`);
     else throw new Error(message);
   }
 }
 
-if (!fs.existsSync(registryPath)) throw new Error(`Plugin registry not found: ${registryPath}`);
+if (!fs.existsSync(registryPath)) throw new Error(`未找到 plugin registry: ${registryPath}`);
 const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 const plugins = (registry.plugins || []).filter((plugin) => plugin && plugin.enabled !== false);
 
@@ -56,12 +56,12 @@ for (const plugin of plugins) {
   console.log(`\n== Plugin: ${plugin.name} [${type}] ==`);
 
   if (type === 'codex-marketplace-repo') {
-    if (!plugin.repo) throw new Error(`Plugin ${plugin.name} is missing repo`);
+    if (!plugin.repo) throw new Error(`Plugin ${plugin.name} 缺少 repo`);
     const args = ['plugin', 'marketplace', 'add', String(plugin.repo)];
     if (plugin.ref) args.push('--ref', String(plugin.ref));
     run('codex', args, { ignoreFailure: true });
   } else if (type === 'standalone-plugin-repo') {
-    if (!plugin.repo) throw new Error(`Plugin ${plugin.name} is missing repo`);
+    if (!plugin.repo) throw new Error(`Plugin ${plugin.name} 缺少 repo`);
     const sourceDir = plugin.sourceDir ? expand(plugin.sourceDir) : path.join(agentsHome, 'plugin-sources', plugin.name);
     if (!fs.existsSync(path.join(sourceDir, '.git'))) {
       fs.mkdirSync(path.dirname(sourceDir), { recursive: true });
@@ -73,18 +73,18 @@ for (const plugin of plugins) {
       run('git', ['-C', sourceDir, 'checkout', String(plugin.ref)]);
       run('git', ['-C', sourceDir, 'pull', '--ff-only'], { ignoreFailure: true });
     }
-    console.warn(`WARNING: Standalone plugin '${plugin.name}' is downloaded to ${sourceDir}. Add it to ~/.agents/plugins/marketplace.json or generate a personal marketplace before installing.`);
+    console.warn(`警告: Standalone plugin '${plugin.name}' 已下载到 ${sourceDir}。安装前请把它加入 ~/.agents/plugins/marketplace.json，或生成个人 marketplace。`);
   } else {
-    throw new Error(`Unsupported plugin type '${type}' for ${plugin.name}`);
+    throw new Error(`Plugin ${plugin.name} 使用了不支持的 type: '${type}'`);
   }
 
   if (!noInstall) {
     const selector = plugin.installSelector || (plugin.marketplaceName ? `${plugin.name}@${plugin.marketplaceName}` : plugin.name);
     run('codex', ['plugin', 'add', String(selector)]);
   } else {
-    console.log('Skipping plugin install because --no-install was provided.');
+    console.log('已指定 --no-install，跳过 plugin install。');
   }
 }
 
-console.log('\nPlugin installation pass complete.');
+console.log('\nPlugin 安装流程完成。');
 NODE

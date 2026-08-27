@@ -19,18 +19,18 @@ while [[ $# -gt 0 ]]; do
     --no-register-mcp) NO_REGISTER_MCP=1; shift ;;
     -h|--help)
       cat <<'HELP'
-Usage: bootstrap.sh [options]
+用法: bootstrap.sh [options]
 
-Options:
-  --agents-home DIR       Agents profile directory. Defaults to the parent of this script directory.
-  --skip-plugins          Do not install/register plugins.
-  --skip-mcp              Do not clone/build/register MCP servers.
-  --skip-mcp-setup        Do not run MCP setup commands such as npm install/build.
-  --no-install-plugins    Prepare plugin marketplaces/sources but do not run codex plugin add.
-  --no-register-mcp       Clone/build MCP sources but do not run codex mcp add.
+选项:
+  --agents-home DIR       agents profile 目录；默认是本脚本目录的父目录。
+  --skip-plugins          不安装/注册 plugins。
+  --skip-mcp              不 clone/build/register MCP servers。
+  --skip-mcp-setup        不运行 MCP setup commands，例如 npm install/build。
+  --no-install-plugins    只准备 plugin marketplaces/sources，不运行 codex plugin add。
+  --no-register-mcp       clone/build MCP sources，但不运行 codex mcp add。
 HELP
       exit 0 ;;
-    *) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) echo "未知选项: $1" >&2; exit 2 ;;
   esac
 done
 
@@ -51,4 +51,4 @@ if [[ "$SKIP_MCP" -eq 0 ]]; then
   bash "$SCRIPT_DIR/install-mcp.sh" "${args[@]}"
 fi
 
-echo 'Bootstrap complete.'
+echo 'Bootstrap 完成。'

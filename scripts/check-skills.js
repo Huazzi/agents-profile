@@ -11,7 +11,7 @@ const https = require('https');
 const readline = require('readline/promises');
 
 function usage() {
-  return `Usage: check-skills.js [options]\n\nCheck options:\n  --agents-home DIR       Agents profile directory. Defaults to AGENTS_HOME or parent of scripts/.\n  --source-type TYPE      all, github, or well-known. Default: all.\n  --skill NAME            Check one skill. Can be repeated or comma-separated.\n  --json                  Emit machine-readable JSON.\n  --no-fetch              Do not access network. Use existing Git caches only; skip well-known fetches.\n\nRegistration options:\n  --register NAME=URL     Add/update one lock entry from a GitHub URL. Can be repeated.\n  --register-missing      Prompt for source URLs for local skills missing from .skill-lock.json.\n  --force-register        Allow --register to overwrite existing lock entries.\n\nOther:\n  --help                  Show this help.\n\nCheck mode is read-only for skills/. Registration mode only edits .skill-lock.json.`;
+  return `用法: check-skills.js [options]\n\n检查选项:\n  --agents-home DIR       agents profile 目录。默认使用 AGENTS_HOME，或 scripts/ 的父目录。\n  --source-type TYPE      all、github 或 well-known。默认: all。\n  --skill NAME            只检查指定 skill；可重复使用，也可用逗号分隔。\n  --json                  输出机器可读 JSON。\n  --no-fetch              不访问网络；仅使用已有 Git 缓存，并跳过 well-known 远程获取。\n\n登记选项:\n  --register NAME=URL     从 GitHub URL 新增/更新一条 lock 记录；可重复使用。\n  --register-missing      对 .skill-lock.json 中缺失的本地 skills 逐个提示输入来源 URL。\n  --force-register        允许 --register 覆盖已有 lock 记录。\n\n其他:\n  --help                  显示本帮助。\n\n检查模式不会修改 skills/。登记模式只会修改 .skill-lock.json。`;
 }
 
 function parseArgs(argv) {
@@ -38,18 +38,18 @@ function parseArgs(argv) {
     else if (arg === '--register-missing') opts.registerMissing = true;
     else if (arg === '--force-register') opts.forceRegister = true;
     else if (arg === '--help' || arg === '-h') opts.help = true;
-    else throw new Error(`Unknown option: ${arg}`);
+    else throw new Error(`未知选项: ${arg}`);
   }
 
   if (!['all', 'github', 'well-known'].includes(opts.sourceType)) {
-    throw new Error(`--source-type must be one of: all, github, well-known`);
+    throw new Error(`--source-type 必须是以下之一: all, github, well-known`);
   }
   opts.skills = [...new Set(opts.skills)];
   return opts;
 }
 
 function requireValue(argv, index, option) {
-  if (index >= argv.length || argv[index].startsWith('--')) throw new Error(`${option} requires a value`);
+  if (index >= argv.length || argv[index].startsWith('--')) throw new Error(`${option} 需要提供值`);
   return argv[index];
 }
 
@@ -59,7 +59,7 @@ function log(opts, message) {
 }
 
 function warn(_opts, message) {
-  console.error(`WARNING: ${message}`);
+  console.error(`警告: ${message}`);
 }
 
 function run(file, args, options = {}) {
@@ -76,7 +76,7 @@ function run(file, args, options = {}) {
   }
   if (result.status !== 0) {
     if (options.ignoreFailure) return { ok: false, status: result.status, stdout: result.stdout || '', stderr: result.stderr || '' };
-    throw new Error(`${file} ${args.join(' ')} exited with code ${result.status}${result.stderr ? `: ${result.stderr.trim()}` : ''}`);
+    throw new Error(`${file} ${args.join(' ')} 退出码为 ${result.status}${result.stderr ? `: ${result.stderr.trim()}` : ''}`);
   }
   return { ok: true, status: 0, stdout: result.stdout || '', stderr: result.stderr || '' };
 }
@@ -139,19 +139,19 @@ function ensureGithubRepo(opts, repoUrl) {
     fs.mkdirSync(cacheRoot, { recursive: true });
     log(opts, `Cloning ${repoUrl} -> ${repoDir}`);
     const clone = run('git', ['clone', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
-    if (!clone.ok) return { ok: false, error: compactError(clone.stderr) || compactError(clone.stdout) || `git clone exited with code ${clone.status}` };
+    if (!clone.ok) return { ok: false, error: compactError(clone.stderr) || compactError(clone.stdout) || `git clone 退出码为 ${clone.status}` };
     return { ok: true };
   };
 
   if (!fs.existsSync(gitDir)) {
-    if (opts.noFetch) return { repoDir, ok: false, error: 'cache-missing-and-no-fetch' };
+    if (opts.noFetch) return { repoDir, ok: false, error: '缓存不存在，且指定了 --no-fetch' };
     const cloned = cloneFresh();
     if (!cloned.ok) return { repoDir, ok: false, error: cloned.error };
   } else {
     const validHead = run('git', ['-C', repoDir, 'rev-parse', '--verify', 'HEAD'], { capture: true, ignoreFailure: true });
     if (!validHead.ok) {
-      if (opts.noFetch) return { repoDir, ok: false, error: 'cache-has-no-valid-head-and-no-fetch' };
-      warn(opts, `Removing incomplete skill source cache: ${repoDir}`);
+      if (opts.noFetch) return { repoDir, ok: false, error: '缓存没有有效 HEAD，且指定了 --no-fetch' };
+      warn(opts, `正在移除不完整的 skill source 缓存: ${repoDir}`);
       fs.rmSync(repoDir, { recursive: true, force: true });
       const cloned = cloneFresh();
       if (!cloned.ok) return { repoDir, ok: false, error: cloned.error };
@@ -161,19 +161,19 @@ function ensureGithubRepo(opts, repoUrl) {
   if (!opts.noFetch) {
     log(opts, `Fetching ${repoUrl}`);
     const fetch = run('git', ['-C', repoDir, 'fetch', '--all', '--prune'], { ignoreFailure: true, capture: opts.json });
-    if (!fetch.ok) return { repoDir, ok: false, error: compactError(fetch.stderr) || compactError(fetch.stdout) || `git fetch exited with code ${fetch.status}` };
+    if (!fetch.ok) return { repoDir, ok: false, error: compactError(fetch.stderr) || compactError(fetch.stdout) || `git fetch 退出码为 ${fetch.status}` };
     run('git', ['-C', repoDir, 'pull', '--ff-only'], { ignoreFailure: true, capture: opts.json });
   }
 
   const head = run('git', ['-C', repoDir, 'rev-parse', 'HEAD'], { capture: true, ignoreFailure: true });
-  return { repoDir, ok: head.ok, head: head.ok ? head.stdout.trim() : null, error: head.ok ? null : compactError(head.stderr) || 'failed to resolve cache HEAD' };
+  return { repoDir, ok: head.ok, head: head.ok ? head.stdout.trim() : null, error: head.ok ? null : compactError(head.stderr) || '无法解析缓存 HEAD' };
 }
 
 function lsRemoteHead(repoUrl) {
   const result = run('git', ['ls-remote', String(repoUrl), 'HEAD'], { capture: true, ignoreFailure: true, timeout: 60000 });
-  if (!result.ok) return { ok: false, error: compactError(result.stderr) || compactError(result.stdout) || `git ls-remote exited with code ${result.status}` };
+  if (!result.ok) return { ok: false, error: compactError(result.stderr) || compactError(result.stdout) || `git ls-remote 退出码为 ${result.status}` };
   const hash = result.stdout.trim().split(/\s+/)[0] || null;
-  return { ok: Boolean(hash), head: hash, error: hash ? null : 'git ls-remote returned no HEAD' };
+  return { ok: Boolean(hash), head: hash, error: hash ? null : 'git ls-remote 未返回 HEAD' };
 }
 
 function compactError(value) {
@@ -218,7 +218,7 @@ function fetchUrlBuffer(url, redirects = 5) {
       res.on('data', (chunk) => chunks.push(chunk));
       res.on('end', () => resolve(Buffer.concat(chunks)));
     });
-    req.on('timeout', () => req.destroy(new Error('request timeout')));
+    req.on('timeout', () => req.destroy(new Error('请求超时')));
     req.on('error', reject);
   });
 }
@@ -263,12 +263,12 @@ function makeResultBase(name, entry, localDir) {
 
 function parseGithubUrl(input, skillName) {
   let url;
-  try { url = new URL(input); } catch (error) { throw new Error(`Invalid URL for ${skillName}: ${input}`); }
+  try { url = new URL(input); } catch (error) { throw new Error(`URL 无效（${skillName}）: ${input}`); }
   if (!['github.com', 'www.github.com'].includes(url.hostname.toLowerCase())) {
-    throw new Error(`Only github.com URLs are supported by --register for now: ${input}`);
+    throw new Error(`目前 --register 只支持 github.com URL: ${input}`);
   }
   const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
-  if (parts.length < 2) throw new Error(`GitHub URL must include owner/repo: ${input}`);
+  if (parts.length < 2) throw new Error(`GitHub URL 必须包含 owner/repo: ${input}`);
   const owner = parts[0];
   const repo = parts[1].replace(/\.git$/i, '');
   const source = `${owner}/${repo}`;
@@ -317,7 +317,7 @@ function findMatchingLocalSourceFile(localDir, remotePath) {
 function buildLockEntryFromUrl(agentsHome, skillName, inputUrl, overrides = {}) {
   const skillsRoot = path.join(agentsHome, 'skills');
   const localDir = path.join(skillsRoot, skillName);
-  if (!fs.existsSync(localDir)) throw new Error(`Local skill directory not found: ${localDir}`);
+  if (!fs.existsSync(localDir)) throw new Error(`未找到本地 skill 目录: ${localDir}`);
   const entry = { ...parseGithubUrl(inputUrl, skillName), ...overrides };
   const now = new Date().toISOString();
   entry.skillFolderHash = hashDir(localDir) || '';
@@ -334,11 +334,11 @@ async function registerEntries(opts, lock, skillsRoot) {
   const registered = [];
   for (const spec of opts.registerSpecs) {
     const idx = spec.indexOf('=');
-    if (idx <= 0) throw new Error(`--register must use NAME=URL format, got: ${spec}`);
+    if (idx <= 0) throw new Error(`--register 必须使用 NAME=URL 格式，当前为: ${spec}`);
     const name = spec.slice(0, idx).trim();
     const url = spec.slice(idx + 1).trim();
-    if (!name || !url) throw new Error(`--register must use NAME=URL format, got: ${spec}`);
-    if (lock.skills[name] && !opts.forceRegister) throw new Error(`Skill '${name}' already exists in lock. Use --force-register to overwrite.`);
+    if (!name || !url) throw new Error(`--register 必须使用 NAME=URL 格式，当前为: ${spec}`);
+    if (lock.skills[name] && !opts.forceRegister) throw new Error(`Skill '${name}' 已存在于 lock 中。若要覆盖，请使用 --force-register。`);
     lock.skills[name] = buildLockEntryFromUrl(opts.agentsHome, name, url);
     registered.push({ name, sourceUrl: lock.skills[name].sourceUrl, checkMode: lock.skills[name].checkMode, skillPath: lock.skills[name].skillPath || null });
   }
@@ -353,7 +353,7 @@ async function registerEntries(opts, lock, skillsRoot) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
     try {
       for (const name of missing) {
-        const answer = (await rl.question(`Source URL for '${name}' (empty to skip): `)).trim();
+        const answer = (await rl.question(`请输入 '${name}' 的来源 URL（留空跳过）: `)).trim();
         if (!answer) continue;
         lock.skills[name] = buildLockEntryFromUrl(opts.agentsHome, name, answer);
         registered.push({ name, sourceUrl: lock.skills[name].sourceUrl, checkMode: lock.skills[name].checkMode, skillPath: lock.skills[name].skillPath || null });
@@ -379,8 +379,8 @@ async function main() {
 
   const lockPath = path.join(opts.agentsHome, '.skill-lock.json');
   const skillsRoot = path.join(opts.agentsHome, 'skills');
-  if (!fs.existsSync(lockPath)) throw new Error(`Skill lock not found: ${lockPath}`);
-  if (!fs.existsSync(skillsRoot)) throw new Error(`Skills directory not found: ${skillsRoot}`);
+  if (!fs.existsSync(lockPath)) throw new Error(`未找到 skill lock: ${lockPath}`);
+  if (!fs.existsSync(skillsRoot)) throw new Error(`未找到 skills 目录: ${skillsRoot}`);
 
   const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
   lock.skills = lock.skills || {};
@@ -388,11 +388,11 @@ async function main() {
   if (opts.registerSpecs.length || opts.registerMissing) {
     const registered = await registerEntries(opts, lock, skillsRoot);
     if (registered.length) writeLock(lockPath, lock);
-    const payload = { updatedAt: new Date().toISOString(), lockPath, registered, skipped: registered.length === 0 ? 'no entries registered' : null };
+    const payload = { updatedAt: new Date().toISOString(), lockPath, registered, skipped: registered.length === 0 ? '没有登记任何条目' : null };
     if (opts.json) console.log(JSON.stringify(payload, null, 2));
     else {
-      console.log(`Updated lock: ${lockPath}`);
-      if (registered.length === 0) console.log('No entries registered.');
+      console.log(`已更新 lock: ${lockPath}`);
+      if (registered.length === 0) console.log('没有登记任何条目。');
       for (const item of registered) console.log(`  ${item.name}: ${item.sourceUrl} [${item.checkMode}]${item.skillPath ? ` ${item.skillPath}` : ''}`);
     }
     return 0;
@@ -421,7 +421,7 @@ async function main() {
       result.localHash = hashDir(localDir);
       if (!entry.sourceUrl) {
         result.status = 'unchecked';
-        result.note = 'missing sourceUrl in .skill-lock.json';
+        result.note = '缺少 .skill-lock.json 中的 sourceUrl';
         results.push(result);
         continue;
       }
@@ -429,12 +429,12 @@ async function main() {
       if (checkMode === 'metadata-only') {
         if (opts.noFetch) {
           result.status = 'metadata-only';
-          result.note = 'source metadata is registered; upstream HEAD not checked because --no-fetch was provided';
+          result.note = '已登记来源元数据；由于指定 --no-fetch，未检查 upstream HEAD';
         } else {
           const remote = lsRemoteHead(entry.sourceUrl);
           result.upstreamRef = remote.head || null;
           result.status = remote.ok ? 'metadata-only' : 'unchecked';
-          result.note = remote.ok ? 'source metadata is registered; no skill content path is configured for comparison' : remote.error;
+          result.note = remote.ok ? '已登记来源元数据；未配置 skill 内容路径，因此不做内容比较' : remote.error;
         }
         results.push(result);
         continue;
@@ -456,7 +456,7 @@ async function main() {
         result.localSourceHash = hashFile(localSourceFile);
         result.upstreamHash = hashFile(upstreamFile);
         result.status = classifySourceFile(result.localSourceHash, result.upstreamHash);
-        result.note = `Source-file mode compares upstream ${entry.skillPath || '(missing skillPath)'} to local ${entry.localSourcePath || 'SKILL.md'}.`;
+        result.note = `source-file 模式会比较 upstream ${entry.skillPath || '(缺少 skillPath)'} 与本地 ${entry.localSourcePath || 'SKILL.md'}。`;
         results.push(result);
         continue;
       }
@@ -466,7 +466,7 @@ async function main() {
       result.upstreamHash = hashDir(upstreamDir);
       result.status = classifyGithub(result.localHash, result.upstreamHash, result.lockHash);
       if (result.lockHash && result.localHash !== result.lockHash && result.upstreamHash !== result.lockHash) {
-        result.note = 'The lock hash does not match this checker hash for local or upstream content; use local/upstream comparison as the first-version signal.';
+        result.note = 'lock hash 与本检查器计算的本地/上游 hash 不一致；第一版请优先参考 local/upstream 对比结果。';
       }
       results.push(result);
       continue;
@@ -483,13 +483,13 @@ async function main() {
       }
       if (opts.noFetch) {
         result.status = 'unchecked';
-        result.note = 'well-known checks require network; skipped because --no-fetch was provided';
+        result.note = 'well-known 检查需要网络；由于指定 --no-fetch，已跳过';
         results.push(result);
         continue;
       }
       if (!entry.sourceUrl) {
         result.status = 'unchecked';
-        result.note = 'missing sourceUrl in .skill-lock.json';
+        result.note = '缺少 .skill-lock.json 中的 sourceUrl';
         results.push(result);
         continue;
       }
@@ -497,10 +497,10 @@ async function main() {
         const buffer = await fetchUrlBuffer(entry.sourceUrl);
         result.upstreamHash = sha1Buffer(buffer);
         result.status = result.localHash === result.upstreamHash ? 'up-to-date' : 'skill-md-differs-from-upstream';
-        result.note = 'Only SKILL.md is checked for well-known sources; local references/ assets are not verified.';
+        result.note = 'well-known 来源仅检查 SKILL.md；不会验证本地 references/ 或其他 assets。';
       } catch (error) {
         result.status = 'unchecked';
-        result.note = `failed to fetch well-known URL: ${error.message}`;
+        result.note = `获取 well-known URL 失败: ${error.message}`;
       }
       results.push(result);
       continue;
@@ -508,7 +508,7 @@ async function main() {
 
     result.localHash = hashDir(localDir);
     result.status = 'unchecked';
-    result.note = `unsupported sourceType: ${sourceType}`;
+    result.note = `不支持的 sourceType: ${sourceType}`;
     results.push(result);
   }
 
@@ -535,7 +535,7 @@ async function main() {
         upstreamHash: null,
         lockHash: null,
         upstreamRef: null,
-        note: 'Present under skills/ but not recorded in .skill-lock.json. Use --register NAME=URL or --register-missing to add provenance.',
+        note: '存在于 skills/ 下，但未记录到 .skill-lock.json。可使用 --register NAME=URL 或 --register-missing 补充来源。',
       });
     }
   }
@@ -563,13 +563,34 @@ async function main() {
   return 0;
 }
 
+function displayWidth(value) {
+  let width = 0;
+  for (const ch of String(value)) {
+    const code = ch.codePointAt(0);
+    width += (
+      (code >= 0x1100 && code <= 0x11ff) ||
+      (code >= 0x2e80 && code <= 0xa4cf) ||
+      (code >= 0xac00 && code <= 0xd7af) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xfe10 && code <= 0xfe6f) ||
+      (code >= 0xff00 && code <= 0xffef)
+    ) ? 2 : 1;
+  }
+  return width;
+}
+
+function padDisplay(value, width) {
+  const text = String(value);
+  return text + ' '.repeat(Math.max(0, width - displayWidth(text)));
+}
+
 function printHumanReport(payload) {
-  console.log('\nSkill update check report');
-  console.log(`Agents home: ${payload.agentsHome}`);
-  console.log(`Checked at : ${payload.checkedAt}`);
-  console.log(`Total      : ${payload.summary.total}`);
+  console.log('\nSkill 更新检查报告');
+  console.log(`Agents home : ${payload.agentsHome}`);
+  console.log(`检查时间    : ${payload.checkedAt}`);
+  console.log(`总计        : ${payload.summary.total}`);
   console.log('');
-  console.log('Status summary:');
+  console.log('状态汇总:');
   for (const [status, count] of Object.entries(payload.summary.byStatus).sort(([a], [b]) => a.localeCompare(b))) {
     console.log(`  ${status.padEnd(36)} ${count}`);
   }
@@ -583,27 +604,28 @@ function printHumanReport(payload) {
     note: item.note || '',
   }));
   const widths = {
-    name: Math.max(4, ...rows.map((r) => r.name.length)),
-    type: Math.max(4, ...rows.map((r) => r.type.length)),
-    status: Math.max(6, ...rows.map((r) => r.status.length)),
+    name: Math.max(displayWidth('Skill'), ...rows.map((r) => displayWidth(r.name))),
+    type: Math.max(displayWidth('来源类型'), ...rows.map((r) => displayWidth(r.type))),
+    status: Math.max(displayWidth('状态'), ...rows.map((r) => displayWidth(r.status))),
   };
-  console.log(`${'Skill'.padEnd(widths.name)}  ${'Type'.padEnd(widths.type)}  ${'Status'.padEnd(widths.status)}  Source / note`);
+  console.log(`${'Skill'.padEnd(widths.name)}  ${'来源类型'.padEnd(widths.type)}  ${'状态'.padEnd(widths.status)}  来源 / 备注`);
   console.log(`${'-'.repeat(widths.name)}  ${'-'.repeat(widths.type)}  ${'-'.repeat(widths.status)}  ${'-'.repeat(40)}`);
   for (const row of rows) {
     const detail = row.note ? `${row.source} | ${row.note}` : row.source;
     console.log(`${row.name.padEnd(widths.name)}  ${row.type.padEnd(widths.type)}  ${row.status.padEnd(widths.status)}  ${detail}`);
   }
   console.log('');
-  console.log('Notes:');
-  console.log('  - This checker does not update skills/. It only reports differences.');
-  console.log('  - GitHub skill-folder mode compares local folder hash vs cached upstream folder hash.');
-  console.log('  - GitHub source-file mode compares one upstream source file to the recorded local source file.');
-  console.log('  - GitHub metadata-only mode records provenance and checks remote HEAD only, without cloning content.');
-  console.log('  - well-known skills are checked against remote SKILL.md only; references/assets are not verified.');
-  console.log('  - untracked-local means the skill exists locally but is not recorded in .skill-lock.json; use --register or --register-missing.');
+  console.log('说明:');
+  console.log('  - 本检查器不会更新 skills/，只报告差异。');
+  console.log('  - GitHub skill-folder 模式会比较本地目录 hash 与缓存的 upstream 目录 hash。');
+  console.log('  - GitHub source-file 模式会比较一个 upstream 源文件与 lock 记录的本地源文件。');
+  console.log('  - GitHub metadata-only 模式只记录来源并检查远程 HEAD，不做内容克隆或内容比较。');
+  console.log('  - well-known skills 只检查远程 SKILL.md；不会验证 references/assets。');
+  console.log('  - untracked-local 表示本地存在该 skill，但 .skill-lock.json 未登记；可使用 --register 或 --register-missing。');
 }
 
 main().then((code) => process.exit(code)).catch((error) => {
-  console.error(`ERROR: ${error.stack || error.message || error}`);
+  console.error(`错误: ${error.stack || error.message || error}`);
   process.exit(1);
 });
+
