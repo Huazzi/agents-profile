@@ -962,6 +962,18 @@
       "skillFolderHash": "70c350b4f51ff09ce2d7fd57f1065e5b06fc3a14",
       "installedAt": "2026-08-29T04:12:02.880Z",
       "updatedAt": "2026-08-29T04:12:02.880Z"
+    },
+    "planning-with-files-zh": {
+      "source": "OthmanAdi/planning-with-files",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/OthmanAdi/planning-with-files.git",
+      "sourceInputUrl": "https://github.com/OthmanAdi/planning-with-files/tree/master/skills/i18n/planning-with-files-zh",
+      "sourceRef": "master",
+      "skillPath": "skills/i18n/planning-with-files-zh/SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "263cd6442b21d0ae2c1a94559a0768993b6a5a14",
+      "installedAt": "2026-08-29T06:10:43.188Z",
+      "updatedAt": "2026-08-29T06:10:43.188Z"
     }
   },
   "dismissed": {
