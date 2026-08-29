@@ -11,7 +11,7 @@ const https = require('https');
 const readline = require('readline/promises');
 
 function usage() {
-  return `用法: check-skills.js [options]\n\n检查选项:\n  --agents-home DIR       agents profile 目录。默认使用 AGENTS_HOME，或 scripts/ 的父目录。\n  --source-type TYPE      all、github 或 well-known。默认: all。\n  --skill NAME            只检查指定 skill；可重复使用，也可用逗号分隔。\n  --json                  输出机器可读 JSON。\n  --no-fetch              不访问网络；仅使用已有 Git 缓存，并跳过 well-known 远程获取。\n\n登记选项:\n  --register NAME=URL     从 GitHub URL 新增/更新一条 lock 记录；可重复使用。\n  --register-missing      对 .skill-lock.json 中缺失的本地 skills 逐个提示输入来源 URL。\n  --force-register        允许 --register 覆盖已有 lock 记录。\n\n其他:\n  --help                  显示本帮助。\n\n检查模式不会修改 skills/。登记模式只会修改 .skill-lock.json。`;
+  return `用法: check-skills.js [options]\n\n检查选项:\n  --agents-home DIR       agents profile 目录。默认使用 AGENTS_HOME，或 scripts/ 的父目录。\n  --source-type TYPE      all、github、well-known、lark-cli 或 codex-plugin。默认: all。\n  --skill NAME            只检查指定 skill；可重复使用，也可用逗号分隔。\n  --json                  输出机器可读 JSON。\n  --no-fetch              不访问网络；仅使用已有 Git 缓存，并跳过 well-known 远程获取。\n\n登记选项:\n  --register NAME=URL     从 GitHub URL 新增/更新一条 lock 记录；可重复使用。\n  --register-missing      对 .skill-lock.json 中缺失的本地 skills 逐个提示输入来源 URL。\n  --force-register        允许 --register 覆盖已有 lock 记录。\n\n其他:\n  --help                  显示本帮助。\n\n检查模式不会修改 skills/。登记模式只会修改 .skill-lock.json。`;
 }
 
 function parseArgs(argv) {
@@ -41,8 +41,8 @@ function parseArgs(argv) {
     else throw new Error(`未知选项: ${arg}`);
   }
 
-  if (!['all', 'github', 'well-known'].includes(opts.sourceType)) {
-    throw new Error(`--source-type 必须是以下之一: all, github, well-known`);
+  if (!['all', 'github', 'well-known', 'lark-cli', 'codex-plugin'].includes(opts.sourceType)) {
+    throw new Error(`--source-type 必须是以下之一: all, github, well-known, lark-cli, codex-plugin`);
   }
   opts.skills = [...new Set(opts.skills)];
   return opts;
@@ -86,7 +86,7 @@ function listFilesRecursive(dir) {
   if (!fs.existsSync(dir)) return out;
   const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
-    if (entry.name === '.DS_Store' || entry.name === 'Thumbs.db') continue;
+    if (entry.name === '.git' || entry.name === '.DS_Store' || entry.name === 'Thumbs.db') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...listFilesRecursive(full));
     else if (entry.isFile()) out.push(full);
@@ -237,6 +237,123 @@ function classifySourceFile(localHash, upstreamHash) {
   if (!localHash) return 'missing-local-source';
   if (!upstreamHash) return 'missing-upstream';
   return localHash === upstreamHash ? 'up-to-date' : 'source-file-differs-from-upstream';
+}
+
+function virtualHash(files) {
+  const root = new Map();
+  for (const [rel, content] of files) {
+    const parts = String(rel).split('/').filter(Boolean);
+    let dir = root;
+    for (const part of parts.slice(0, -1)) {
+      if (!dir.has(part)) dir.set(part, new Map());
+      dir = dir.get(part);
+    }
+    dir.set(parts[parts.length - 1], content);
+  }
+
+  const ordered = [];
+  const walk = (prefix, dir) => {
+    for (const [name, value] of [...dir.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const rel = prefix ? `${prefix}/${name}` : name;
+      if (value instanceof Map) walk(rel, value);
+      else ordered.push([rel, value]);
+    }
+  };
+  walk('', root);
+
+  const hash = crypto.createHash('sha1');
+  for (const [rel, content] of ordered) {
+    hash.update(rel);
+    hash.update('\0');
+    hash.update(Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8'));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
+}
+
+function runJson(file, args, env = {}) {
+  const result = cp.spawnSync(file, args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false,
+    timeout: 120000,
+    env: { ...process.env, ...env },
+  });
+  if (result.error) return { ok: false, error: String(result.error.message || result.error) };
+  if (result.status !== 0) return { ok: false, error: compactError(result.stderr) || compactError(result.stdout) || `${file} ${args.join(' ')} 退出码为 ${result.status}` };
+  try { return { ok: true, data: JSON.parse(result.stdout), stdout: result.stdout }; }
+  catch (error) { return { ok: false, error: `无法解析 JSON 输出: ${error.message}` }; }
+}
+
+function runText(file, args, env = {}) {
+  const result = cp.spawnSync(file, args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false,
+    timeout: 120000,
+    env: { ...process.env, ...env },
+  });
+  if (result.error) return { ok: false, error: String(result.error.message || result.error) };
+  if (result.status !== 0) return { ok: false, error: compactError(result.stderr) || compactError(result.stdout) || `${file} ${args.join(' ')} 退出码为 ${result.status}` };
+  return { ok: true, stdout: result.stdout };
+}
+
+function larkCliEnv() {
+  return { LARKSUITE_CLI_NO_UPDATE_NOTIFIER: '1', LARKSUITE_CLI_NO_SKILLS_NOTIFIER: '1' };
+}
+
+function getLarkCliVersion() {
+  const result = runText('lark-cli', ['--version'], larkCliEnv());
+  if (!result.ok) return { ok: false, error: result.error };
+  const version = (result.stdout.match(/(\d+\.\d+\.\d+(?:[-+][^\s]+)?)/) || [])[1] || result.stdout.trim();
+  return { ok: Boolean(version), version, error: version ? null : '无法解析 lark-cli 版本' };
+}
+
+function listLarkCliSkillFiles(skillName) {
+  const files = [];
+  const pending = [skillName];
+  while (pending.length) {
+    const current = pending.shift();
+    const listed = runJson('lark-cli', ['skills', 'list', current], larkCliEnv());
+    if (!listed.ok) return { ok: false, error: listed.error };
+    const entries = Array.isArray(listed.data.entries) ? listed.data.entries : [];
+    for (const entry of entries) {
+      if (!entry || !entry.path) continue;
+      if (entry.is_dir) pending.push(entry.path);
+      else files.push(entry.path);
+    }
+  }
+  return { ok: true, files: [...new Set(files)].sort((a, b) => a.localeCompare(b)) };
+}
+
+function hashLarkCliSkill(skillName) {
+  const listed = listLarkCliSkillFiles(skillName);
+  if (!listed.ok) return { ok: false, error: listed.error };
+  const files = [];
+  for (const cliPath of listed.files) {
+    const read = runText('lark-cli', ['skills', 'read', cliPath], larkCliEnv());
+    if (!read.ok) return { ok: false, error: `${cliPath}: ${read.error}` };
+    const prefix = `${skillName}/`;
+    const rel = cliPath.startsWith(prefix) ? cliPath.slice(prefix.length) : cliPath;
+    files.push([rel, read.stdout]);
+  }
+  return { ok: true, hash: virtualHash(files), fileCount: files.length };
+}
+
+function findPluginSkillDir(entry, skillName) {
+  const home = os.homedir();
+  const marketplaceName = entry.marketplaceName || 'huazzi-plugins';
+  const pluginName = entry.pluginName || path.basename(String(entry.sourceInputUrl || '')).split('@')[0] || entry.source || 'feature-dev-codex';
+  const candidates = [];
+  candidates.push(path.join(home, '.codex', '.tmp', 'marketplaces', marketplaceName, 'plugins', pluginName, 'skills', skillName));
+  if (entry.pluginVersion) candidates.push(path.join(home, '.codex', 'plugins', 'cache', marketplaceName, pluginName, String(entry.pluginVersion), 'skills', skillName));
+  const cacheRoot = path.join(home, '.codex', 'plugins', 'cache', marketplaceName, pluginName);
+  if (fs.existsSync(cacheRoot)) {
+    for (const version of fs.readdirSync(cacheRoot).sort((a, b) => b.localeCompare(a))) {
+      candidates.push(path.join(cacheRoot, version, 'skills', skillName));
+    }
+  }
+  return candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) || null;
 }
 
 function makeResultBase(name, entry, localDir) {
@@ -506,6 +623,50 @@ async function main() {
       continue;
     }
 
+    if (sourceType === 'lark-cli') {
+      result.localHash = hashDir(localDir);
+      const version = getLarkCliVersion();
+      if (!version.ok) {
+        result.status = 'unchecked';
+        result.note = `无法运行 lark-cli: ${version.error}`;
+        results.push(result);
+        continue;
+      }
+      result.upstreamRef = `v${version.version}`;
+      const upstream = hashLarkCliSkill(name);
+      if (!upstream.ok) {
+        result.status = 'unchecked';
+        result.note = `读取 lark-cli 内置 skill 失败: ${upstream.error}`;
+        results.push(result);
+        continue;
+      }
+      result.upstreamHash = upstream.hash;
+      result.status = classifyGithub(result.localHash, result.upstreamHash, result.lockHash);
+      result.note = `lark-cli ${version.version} 内置 skill，共 ${upstream.fileCount} 个文件。`;
+      if (entry.cliVersion && entry.cliVersion !== version.version) result.note += ` lock 登记 cliVersion=${entry.cliVersion}。`;
+      if (result.lockHash && result.localHash !== result.lockHash) result.note += ' lock hash 与本地目录不一致。';
+      results.push(result);
+      continue;
+    }
+
+    if (sourceType === 'codex-plugin') {
+      result.localHash = hashDir(localDir);
+      const upstreamDir = findPluginSkillDir(entry || {}, name);
+      result.upstreamDir = upstreamDir;
+      if (!upstreamDir) {
+        result.status = 'unchecked';
+        result.note = '未找到本地 Codex plugin marketplace/cache 中的 skill 来源目录；可先运行 codex plugin marketplace upgrade / codex plugin add。';
+        results.push(result);
+        continue;
+      }
+      result.upstreamHash = hashDir(upstreamDir);
+      result.status = classifyGithub(result.localHash, result.upstreamHash, result.lockHash);
+      result.note = `Codex plugin skill 来源: ${upstreamDir}`;
+      if (result.lockHash && result.localHash !== result.lockHash) result.note += ' lock hash 与本地目录不一致。';
+      results.push(result);
+      continue;
+    }
+
     result.localHash = hashDir(localDir);
     result.status = 'unchecked';
     result.note = `不支持的 sourceType: ${sourceType}`;
@@ -621,6 +782,8 @@ function printHumanReport(payload) {
   console.log('  - GitHub source-file 模式会比较一个 upstream 源文件与 lock 记录的本地源文件。');
   console.log('  - GitHub metadata-only 模式只记录来源并检查远程 HEAD，不做内容克隆或内容比较。');
   console.log('  - well-known skills 只检查远程 SKILL.md；不会验证 references/assets。');
+  console.log('  - lark-cli 模式会比较本地目录与当前 lark-cli 内置 skill 文件。');
+  console.log('  - codex-plugin 模式会比较本地目录与本机 Codex plugin marketplace/cache 中的 skill 文件。');
   console.log('  - untracked-local 表示本地存在该 skill，但 .skill-lock.json 未登记；可使用 --register 或 --register-missing。');
 }
 

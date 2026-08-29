@@ -20,26 +20,7 @@ metadata:
 
 # Open Code Review — Delegation Mode
 
-This Codex plugin skill intentionally mirrors the canonical skill at
-`skills/open-code-review-delegate/SKILL.md`. Keep both files synchronized when
-updating OCR delegation instructions; a symlink is avoided because plugin
-installs may only materialize the plugin subtree.
-
 A skill for performing AI code review where OCR provides deterministic engineering (file filtering, rule resolution) and the host agent performs the actual review using its own intelligence and tools.
-
-## Prerequisites
-
-```bash
-which ocr || echo "NOT INSTALLED"
-```
-
-If `ocr` is not installed:
-
-```bash
-npm install -g @alibaba-group/open-code-review
-```
-
-No LLM configuration is needed for delegation mode.
 
 ## Workflow
 

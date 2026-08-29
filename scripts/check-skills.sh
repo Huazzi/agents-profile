@@ -34,12 +34,16 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 ARGS=("$SCRIPT_DIR/check-skills.js" --agents-home "$AGENTS_HOME" --source-type "$SOURCE_TYPE")
-for skill in "${SKILLS[@]}"; do
-  ARGS+=(--skill "$skill")
-done
-for spec in "${REGISTERS[@]}"; do
-  ARGS+=(--register "$spec")
-done
+if ((${#SKILLS[@]})); then
+  for skill in "${SKILLS[@]}"; do
+    ARGS+=(--skill "$skill")
+  done
+fi
+if ((${#REGISTERS[@]})); then
+  for spec in "${REGISTERS[@]}"; do
+    ARGS+=(--register "$spec")
+  done
+fi
 if [[ "$JSON" == "1" ]]; then ARGS+=(--json); fi
 if [[ "$NO_FETCH" == "1" ]]; then ARGS+=(--no-fetch); fi
 if [[ "$REGISTER_MISSING" == "1" ]]; then ARGS+=(--register-missing); fi

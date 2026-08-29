@@ -32,9 +32,11 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 ARGS=("$SCRIPT_DIR/update-skills.js" --agents-home "$AGENTS_HOME" --source-type "$SOURCE_TYPE")
-for skill in "${SKILLS[@]}"; do
-  ARGS+=(--skill "$skill")
-done
+if ((${#SKILLS[@]})); then
+  for skill in "${SKILLS[@]}"; do
+    ARGS+=(--skill "$skill")
+  done
+fi
 if [[ "$ALL" == "1" ]]; then ARGS+=(--all); fi
 if [[ "$DRY_RUN" == "1" ]]; then ARGS+=(--dry-run); fi
 if [[ "$NO_FETCH" == "1" ]]; then ARGS+=(--no-fetch); fi
