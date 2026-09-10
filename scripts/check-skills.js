@@ -130,6 +130,14 @@ function safeRepoDirName(repoUrl) {
   return `${readable}-${suffix}`;
 }
 
+// 缓存必须以「上游 blob 的原始字节」落盘。若检出时 core.autocrlf 生效，
+// 工作区会把 LF 改写成 CRLF，hashDir 就会把行尾差异误判为内容差异。
+// 返回 true 表示该缓存是用会转换行尾的配置检出的，需要重建。
+function cacheNeedsEolReset(repoDir) {
+  const current = run('git', ['-C', repoDir, 'config', '--get', 'core.autocrlf'], { capture: true, ignoreFailure: true });
+  return !(current.ok && current.stdout.trim() === 'false');
+}
+
 function ensureGithubRepo(opts, repoUrl) {
   const cacheRoot = path.join(opts.agentsHome, '.cache', 'skill-sources');
   const repoDir = path.join(cacheRoot, safeRepoDirName(repoUrl));
@@ -138,7 +146,7 @@ function ensureGithubRepo(opts, repoUrl) {
   const cloneFresh = () => {
     fs.mkdirSync(cacheRoot, { recursive: true });
     log(opts, `Cloning ${repoUrl} -> ${repoDir}`);
-    const clone = run('git', ['clone', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
+    const clone = run('git', ['clone', '--config', 'core.autocrlf=false', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
     if (!clone.ok) return { ok: false, error: compactError(clone.stderr) || compactError(clone.stdout) || `git clone 退出码为 ${clone.status}` };
     return { ok: true };
   };
@@ -155,6 +163,15 @@ function ensureGithubRepo(opts, repoUrl) {
       fs.rmSync(repoDir, { recursive: true, force: true });
       const cloned = cloneFresh();
       if (!cloned.ok) return { repoDir, ok: false, error: cloned.error };
+    } else if (cacheNeedsEolReset(repoDir)) {
+      if (opts.noFetch) {
+        warn(opts, `缓存曾按 core.autocrlf 检出，行尾差异可能被误判为内容差异；指定 --no-fetch 时无法重建: ${repoDir}`);
+      } else {
+        warn(opts, `缓存曾按 core.autocrlf 检出，正在重建以对齐上游行尾: ${repoDir}`);
+        fs.rmSync(repoDir, { recursive: true, force: true });
+        const cloned = cloneFresh();
+        if (!cloned.ok) return { repoDir, ok: false, error: cloned.error };
+      }
     }
   }
 

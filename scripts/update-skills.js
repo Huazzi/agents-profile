@@ -150,6 +150,14 @@ function checkoutRef(opts, repoDir, sourceRef) {
   throw new Error(`无法 checkout sourceRef '${sourceRef}'，repo: ${repoDir}`);
 }
 
+// 缓存必须以「上游 blob 的原始字节」落盘：本脚本会把缓存内容拷进 skills/，
+// 若检出时 core.autocrlf 生效，CRLF 就会被写进仓库并与上游 hash 不一致。
+// 返回 true 表示该缓存是用会转换行尾的配置检出的，需要重建。
+function cacheNeedsEolReset(repoDir) {
+  const current = run('git', ['-C', repoDir, 'config', '--get', 'core.autocrlf'], { capture: true, ignoreFailure: true });
+  return !(current.ok && current.stdout.trim() === 'false');
+}
+
 function ensureGithubRepo(opts, repoUrl, sourceRef) {
   const cacheRoot = path.join(opts.agentsHome, '.cache', 'skill-sources');
   const repoDir = path.join(cacheRoot, safeRepoDirName(repoUrl));
@@ -159,7 +167,7 @@ function ensureGithubRepo(opts, repoUrl, sourceRef) {
     if (opts.noFetch) return { repoDir, ok: false, error: '缓存不存在，且指定了 --no-fetch' };
     fs.mkdirSync(cacheRoot, { recursive: true });
     log(opts, `Cloning ${repoUrl} -> ${repoDir}`);
-    const clone = run('git', ['clone', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
+    const clone = run('git', ['clone', '--config', 'core.autocrlf=false', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
     if (!clone.ok) return { repoDir, ok: false, error: compactError(clone.stderr) || compactError(clone.stdout) || `git clone 退出码为 ${clone.status}` };
   } else {
     const validHead = run('git', ['-C', repoDir, 'rev-parse', '--verify', 'HEAD'], { capture: true, ignoreFailure: true });
@@ -167,8 +175,18 @@ function ensureGithubRepo(opts, repoUrl, sourceRef) {
       if (opts.noFetch) return { repoDir, ok: false, error: '缓存没有有效 HEAD，且指定了 --no-fetch' };
       fs.rmSync(repoDir, { recursive: true, force: true });
       fs.mkdirSync(cacheRoot, { recursive: true });
-      const clone = run('git', ['clone', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
+      const clone = run('git', ['clone', '--config', 'core.autocrlf=false', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
       if (!clone.ok) return { repoDir, ok: false, error: compactError(clone.stderr) || compactError(clone.stdout) || `git clone 退出码为 ${clone.status}` };
+    } else if (cacheNeedsEolReset(repoDir)) {
+      if (opts.noFetch) {
+        warn(opts, `缓存曾按 core.autocrlf 检出，行尾差异可能被误判为内容差异；指定 --no-fetch 时无法重建: ${repoDir}`);
+      } else {
+        warn(opts, `缓存曾按 core.autocrlf 检出，正在重建以对齐上游行尾: ${repoDir}`);
+        fs.rmSync(repoDir, { recursive: true, force: true });
+        fs.mkdirSync(cacheRoot, { recursive: true });
+        const clone = run('git', ['clone', '--config', 'core.autocrlf=false', '--depth', '1', String(repoUrl), repoDir], { ignoreFailure: true, timeout: 180000, capture: opts.json });
+        if (!clone.ok) return { repoDir, ok: false, error: compactError(clone.stderr) || compactError(clone.stdout) || `git clone 退出码为 ${clone.status}` };
+      }
     }
   }
 
