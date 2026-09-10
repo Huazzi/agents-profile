@@ -974,6 +974,18 @@
       "skillFolderHash": "263cd6442b21d0ae2c1a94559a0768993b6a5a14",
       "installedAt": "2026-08-29T06:10:43.188Z",
       "updatedAt": "2026-08-29T06:10:43.188Z"
+    },
+    "git-integration-mr": {
+      "source": "Huazzi/git-integration-mr",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Huazzi/git-integration-mr.git",
+      "sourceInputUrl": "https://github.com/Huazzi/git-integration-mr/tree/main",
+      "sourceRef": "main",
+      "skillPath": "SKILL.md",
+      "checkMode": "skill-folder",
+      "skillFolderHash": "1d8c4bf49ea534bdb795db5c7de452e5296500e2",
+      "installedAt": "2026-09-10T11:45:04.324Z",
+      "updatedAt": "2026-09-10T11:45:04.324Z"
     }
   },
   "dismissed": {
