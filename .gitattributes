@@ -1,0 +1,7 @@
+# 仓库内容统一以 LF 存储并检出。
+#
+# 原因：scripts/check-skills.js 的 hashDir 按「原始字节」计算 skill 目录 hash。
+# 若检出时 core.autocrlf 把 LF 改写成 CRLF，行尾差异会被误判为内容差异
+# （update-skills 还会把 CRLF 内容拷进 skills/）。CRLF 的 .sh 在 macOS/Linux
+# 上也会直接无法执行。
+* text=auto eol=lf
