@@ -1,0 +1,4 @@
+interface:
+  display_name: "需求实现归档"
+  short_description: "核对目标阶段代码，将需求整理为双文稿并同步维护共享目录导航"
+  default_prompt: "使用 $archive-requirements 整理指定需求，核实当前阶段的最终实现，生成需求文档与技术方案并同步更新目录页。"

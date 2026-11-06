@@ -24,8 +24,11 @@ graph TD
 - 按主题批量生成澄清问题包，并为问题提供候选方案、推荐方案、依据和影响说明。
 - 记录逐条确认或“批量接受推荐方案”的澄清结论。
 - 维护派生的需求工作稿，不修改原始 PRD。
+- 对候选疑点先分类、核查事实并拆分混合问题，维护代码事实与问题状态，只提交剩余决策或关键补证请求。
 - 使用统一结构化模板生成最终版需求文档。
-- 在用户提供代码仓库或系统材料时，只读引用现有系统事实辅助澄清。
+- 有可靠关联仓库上下文（包括当前工作区）时定向追踪真实链路并记录版本、覆盖和限制；无代码库时继续通用流程。
+
+归档阶段仍只归档并停止。后续分析先形成内部需求工作底稿；评估或问题包保存本轮增量、代码事实和完整候选台账，工作稿更新阶段再统一发布工作稿，不新增发布命令。代码事实已查明只关闭事实问题，范围与规则选择仍须有明确需求或人工确认。
 
 ## 文件结构
 
@@ -38,7 +41,8 @@ prd-handler/
 │   ├── prd_assessment_template.md
 │   ├── clarification_questions_template.md
 │   ├── requirement_draft_template.md
-│   └── final_prd_template.md
+│   ├── final_prd_template.md
+│   └── evidence_first_clarification.md
 └── scripts/
     └── manage_prd_workspace.py
 ```
