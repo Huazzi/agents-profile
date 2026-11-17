@@ -129,11 +129,12 @@ function safeRepoDirName(repoUrl) {
 
 function checkoutRef(opts, repoDir, sourceRef) {
   if (!sourceRef) {
-    if (!opts.noFetch) run('git', ['-C', repoDir, 'pull', '--ff-only'], { ignoreFailure: true, capture: opts.json });
+    const checkout = run('git', ['-C', repoDir, 'checkout', '--detach', 'refs/remotes/origin/HEAD'], { ignoreFailure: true, capture: true });
+    if (!checkout.ok) throw new Error(`无法 checkout origin/HEAD，repo: ${repoDir}`);
     return;
   }
 
-  const targets = [String(sourceRef), `origin/${sourceRef}`];
+  const targets = [`refs/remotes/origin/${sourceRef}`, String(sourceRef)];
   for (const target of targets) {
     const checkout = run('git', ['-C', repoDir, 'checkout', '--detach', target], { ignoreFailure: true, capture: true });
     if (checkout.ok) return;
